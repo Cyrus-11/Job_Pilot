@@ -1,26 +1,148 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+
+  /* Page and surface backgrounds */
+  --color-background: #f6f7fb;
+  --color-surface: #ffffff;
+  --color-surface-secondary: #f9fafb;
+  --color-surface-tertiary: #f2f5f7;
+  --color-surface-muted: #f4f5fb;
+
+  /* Borders */
+  --color-border: #e7eaf3;
+  --color-border-light: #e5e7eb;
+  --color-border-muted: #dfe1e7;
+
+  /* Text */
+  --color-text-primary: #101828;
+  --color-text-secondary: #6a7282;
+  --color-text-muted: #99a1af;
+  --color-text-dark: #364153;
+  --color-text-darker: #36394a;
+  --color-text-darkest: #111827;
+  --color-text-black: #131316;
+  --color-text-slate: #272835;
+  --color-text-slate-medium: #666d80;
+
+  /* Primary accent */
+  --color-accent: #7c5cfc;
+  --color-accent-dark: #5e4cff;
+  --color-accent-light: #f3e8ff;
+  --color-accent-muted: #faf5ff;
+  --color-accent-foreground: #ffffff;
+
+  /* Success */
+  --color-success: #10b981;
+  --color-success-alt: #00bc7d;
+  --color-success-dark: #007a55;
+  --color-success-darker: #009966;
+  --color-success-light: #d0fae5;
+  --color-success-lightest: #ecfdf5;
+  --color-success-foreground: #007a55;
+
+  /* Info */
+  --color-info: #61a8ff;
+  --color-info-dark: #155dfc;
+  --color-info-medium: #2b7fff;
+  --color-info-light: #dbeafe;
+  --color-info-lightest: #eff6ff;
+  --color-info-foreground: #155dfc;
+  --color-info-muted: #94a2c5;
+
+  /* Warning */
+  --color-warning: #ff8904;
+  --color-warning-foreground: #ffffff;
+
+  /* Error */
+  --color-error: #ef4444;
+  --color-error-foreground: #ffffff;
+
+  /* LinkedIn brand */
+  --color-linkedin: #0a66c2;
+  --color-linkedin-light: #dce6f1;
+  --color-linkedin-foreground: #ffffff;
+
+  /* Dark overlays */
+  --color-overlay: #111827;
+  --color-overlay-dark: #131316;
+
+  /* Landing page reference */
+  --color-landing-heading: #241b2e;
+  --color-landing-button: #252430;
+  --color-landing-button-top: #42424e;
+  --color-landing-glow-blue: #c9ddf1;
+  --color-landing-glow-pink: #f4e7f3;
+
+  /* Border radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  *,
+  ::before,
+  ::after {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background font-sans text-text-primary;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .landing-container {
+    @apply mx-auto w-[calc(100%-32px)] max-w-[1272px] md:w-[calc(100%-80px)] lg:w-[calc(100%-160px)];
+  }
+
+  .landing-focus {
+    @apply focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent;
+  }
+
+  .landing-nav-link {
+    @apply rounded-sm transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent;
+  }
+
+  .landing-button-primary {
+    @apply inline-flex items-center justify-center rounded-md border border-surface/20 bg-linear-to-b from-landing-button-top to-landing-button text-accent-foreground transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent;
+  }
+
+  .landing-button-secondary {
+    @apply inline-flex items-center justify-center rounded-md border border-border-muted bg-surface/30 text-landing-heading transition-colors hover:bg-surface/80 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent;
+  }
+
+  .landing-gradient {
+    position: relative;
+    isolation: isolate;
+    background-color: var(--color-surface);
+    background-image:
+      radial-gradient(ellipse at 92% 28%, var(--color-landing-glow-blue) 4%, transparent 46%),
+      radial-gradient(ellipse at 40% -12%, var(--color-landing-glow-blue) 6%, transparent 28%),
+      radial-gradient(ellipse at 25% 10%, var(--color-landing-glow-pink) 4%, transparent 31%),
+      radial-gradient(ellipse at 51% 122%, var(--color-landing-glow-blue) 5%, transparent 29%),
+      radial-gradient(ellipse at 65% 100%, var(--color-landing-glow-pink) 8%, transparent 64%);
+  }
+
+  .landing-gradient::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath filter='url(%23grain)' d='M0 0h180v180H0z'/%3E%3C/svg%3E");
+  }
+
+  .landing-divider {
+    @apply h-12 bg-surface lg:h-[78px];
+    background-image: repeating-linear-gradient(120deg, transparent 0px, transparent 5px, var(--color-border) 5px, transparent 6px);
+  }
 }
