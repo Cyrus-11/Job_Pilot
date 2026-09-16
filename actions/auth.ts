@@ -7,6 +7,7 @@ import { createAuthActions } from "@insforge/sdk/ssr";
 import {
   OAUTH_CODE_VERIFIER_COOKIE,
   POSTHOG_DISTINCT_ID_COOKIE,
+  parseSafeAuthRedirect,
 } from "@/lib/auth";
 import { hasInsforgePublicConfig } from "@/lib/insforge-config";
 import { createInsforgeServer } from "@/lib/insforge-server";
@@ -34,6 +35,10 @@ function parsePostHogDistinctId(value: FormDataEntryValue | null): string | null
 
   const distinctId = value.trim();
   return distinctId && distinctId.length <= 200 ? distinctId : null;
+}
+
+function parseRedirectPath(value: FormDataEntryValue | null): string {
+  return parseSafeAuthRedirect(typeof value === "string" ? value : null);
 }
 
 async function capturePostHogException(
@@ -83,7 +88,10 @@ export async function signInWithOAuth(
 
     const cookieStore = await cookies();
     const auth = createAuthActions({ cookies: cookieStore });
-    const redirectTo = `${await getRequestOrigin()}/callback`;
+    const next = parseRedirectPath(formData.get("next"));
+    const callbackUrl = new URL("/callback", await getRequestOrigin());
+    callbackUrl.searchParams.set("next", next);
+    const redirectTo = callbackUrl.toString();
     const { data, error } = await auth.signInWithOAuth(provider, {
       redirectTo,
       skipBrowserRedirect: true,

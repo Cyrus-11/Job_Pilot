@@ -2,7 +2,13 @@ import type { ReactElement } from "react";
 
 import { CtaLinks } from "@/components/homepage/CtaLinks";
 
-export function ClosingCta(): ReactElement {
+type ClosingCtaProps = {
+  isAuthenticated?: boolean;
+};
+
+export function ClosingCta({
+  isAuthenticated = false,
+}: ClosingCtaProps): ReactElement {
   return (
     <>
       <div aria-hidden="true" className="landing-divider" />
@@ -11,7 +17,7 @@ export function ClosingCta(): ReactElement {
           Your next job search can feel a<br className="hidden lg:block" /> lot less overwhelming
         </h2>
         <p className="mt-7 text-base leading-relaxed text-text-dark lg:text-lg">Set up your profile, upload your resume, and start finding matches in minutes.</p>
-        <div className="mt-7"><CtaLinks /></div>
+        <div className="mt-7"><CtaLinks isAuthenticated={isAuthenticated} /></div>
       </section>
       <div aria-hidden="true" className="landing-divider border-b border-border" />
     </>

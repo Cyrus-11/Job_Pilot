@@ -2,13 +2,29 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ReactElement } from "react";
 
-import { signOut } from "@/actions/auth";
+import { WorkspaceNav } from "@/components/layout/WorkspaceNav";
 
 type NavbarProps = {
   isAuthenticated?: boolean;
 };
 
 export function Navbar({ isAuthenticated = false }: NavbarProps): ReactElement {
+  if (isAuthenticated) {
+    return (
+      <header className="border-b border-border bg-surface">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:block focus:p-4 focus:text-accent">
+          Skip to content
+        </a>
+        <div className="mx-auto flex min-h-16 w-full max-w-[1440px] flex-col items-center justify-between gap-1 px-5 sm:flex-row sm:px-8">
+          <Link href="/" aria-label="JobPilot home" className="landing-focus w-fit rounded-sm py-4 sm:py-0">
+            <Image src="/logo.png" alt="JobPilot" width={494} height={168} className="h-auto w-[124px]" />
+          </Link>
+          <WorkspaceNav />
+        </div>
+      </header>
+    );
+  }
+
   return (
     <header className="border-b border-border bg-surface">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:block focus:p-4 focus:text-accent">
@@ -23,17 +39,9 @@ export function Navbar({ isAuthenticated = false }: NavbarProps): ReactElement {
           <Link className="landing-nav-link" href="/find-jobs" prefetch={false}>Find Jobs</Link>
           <Link className="landing-nav-link" href="/profile" prefetch={false}>Profile</Link>
         </nav>
-        {isAuthenticated ? (
-          <form action={signOut} className="col-start-2 row-start-1 justify-self-end sm:col-start-3">
-            <button type="submit" className="landing-button-secondary px-5 py-2.5 text-sm">
-              Sign out
-            </button>
-          </form>
-        ) : (
-          <Link href="/login" prefetch={false} className="landing-button-primary col-start-2 row-start-1 justify-self-end px-5 py-2.5 text-sm sm:col-start-3">
-            Start for free
-          </Link>
-        )}
+        <Link href={isAuthenticated ? "/dashboard" : "/login"} prefetch={false} className="landing-button-primary col-start-2 row-start-1 justify-self-end px-5 py-2.5 text-sm sm:col-start-3">
+          {isAuthenticated ? "Dashboard" : "Start for free"}
+        </Link>
       </div>
     </header>
   );

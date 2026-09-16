@@ -220,8 +220,15 @@ URL saved to profiles table
 | resume_pdf_url      | text        | InsForge Storage URL of current resume       |
 | resume_pdf_key      | text        | InsForge Storage object key for download/delete |
 | is_complete         | boolean     | True when all required fields filled         |
+| completion_percentage | integer   | Saved percentage across ten matching-readiness fields |
+| missing_fields      | text[]      | Saved human-readable names of missing requirements |
+| first_completed_at  | timestamptz | First-completion analytics claim; never reset by normal saves |
 | created_at          | timestamptz |                                              |
 | updated_at          | timestamptz |                                              |
+
+Profile mutations (Feature 06) use `actions/profile.ts`. `lib/profile.ts` owns the validated field contract and completion calculation. Uploading is independent of form saving. `app/api/resume/download/route.ts` authenticates before using the SDK to download the private file. Extraction and generation keep the API-route flow described above.
+
+Work experience JSON: `{ company, title, start_date, end_date, is_current, responsibilities }[]` (maximum three; dates use `YYYY-MM`). Education JSON: `{ degree, field, institution, graduation_year }`. Feature 07 extraction must target this contract and leave persistence to explicit user save.
 
 ### `agent_runs`
 

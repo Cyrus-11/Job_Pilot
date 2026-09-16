@@ -28,6 +28,16 @@ Never rely on general training knowledge alone for library APIs — they change 
 
 ## InsForge
 
+### Verified Feature 06 Patterns (2026-09-12)
+
+These current SDK patterns supersede older examples below for profile work:
+
+- SSR helpers are imported from `@insforge/sdk/ssr`; reuse `createInsforgeServer()` and `auth.getCurrentUser()`.
+- CRUD uses `client.database.from(...)`; inserts use arrays. Scope profiles by `id = user.id` (other tables use `user_id`). Use `.maybeSingle()` for the not-yet-created profile.
+- Storage `.from("resumes").upload(key, fileOrBlob)` accepts two arguments. The installed SDK replaces existing keys implicitly; do not pass an `upsert` option. Store both returned `url` and `key`.
+- The resume bucket is private. Do not treat `getPublicUrl()` as access authorization. Download through the authenticated server SDK using the stored owner key.
+- Profile validation uses the approved Zod dependency, shared through `lib/profile.ts`; UI icons use the approved `lucide-react` dependency. See [Zod schema documentation](https://zod.dev/api).
+
 **Check first:** Check AGENTS.md for an installed InsForge skill. If an InsForge MCP server is configured — use it. The skill/MCP will have the latest API patterns.
 
 ### Client vs Server
@@ -494,6 +504,10 @@ const response = await openai.chat.completions.create({
 
 **Check first:** Check AGENTS.md for an installed OpenAI skill. The skill will have the latest API patterns and model capabilities.
 
+### Verified Feature 07 Pattern (2026-09-12)
+
+Resume extraction uses the official `openai` package in server-only code through `lib/resume-extraction.ts`. Keep the project model requirement as `gpt-4o`, `response_format: { type: "json_object" }`, `temperature: 0.3`, and `max_tokens: 800`; validate parsed JSON with Zod before returning it to UI. The route returns a draft only and never saves model output directly to InsForge.
+
 ### Structured JSON Response
 
 ```typescript
@@ -608,6 +622,14 @@ await posthog.shutdown(); // required — ensures event is sent
 
 **Check first:** Check AGENTS.md for an installed react-pdf skill. PDF generation APIs can differ from general training knowledge.
 
+### Verified Feature 08 Pattern (2026-09-15)
+
+Resume generation uses `@react-pdf/renderer` v4 server-side only through `lib/resume-generation.tsx`; API routes import helpers, not React PDF primitives directly. GPT-4o returns validated JSON for resume wording, while the PDF document structure is deterministic. Render with `renderToBuffer()`, copy the returned `Buffer` into a plain `Uint8Array`, wrap that in a PDF `Blob`, upload to the private `resumes` bucket at `{user.id}/resume.pdf`, and update only `resume_pdf_url` / `resume_pdf_key`.
+
+Next.js production builds need the React PDF/Yoga stack externalized so Yoga's base64 WASM loader runs from installed packages instead of Turbopack server chunks. Keep these in `serverExternalPackages`: `@react-pdf/renderer`, `@react-pdf/font`, `@react-pdf/layout`, `@react-pdf/render`, `@react-pdf/textkit`, and `yoga-layout`.
+
+The production runtime check in `tests/resume-runtime.mjs` verifies `/api/resume/generate` through `next start` with external services stubbed. The test fixture must allow `data:` URL fetches through to the original fetch because Yoga loads WASM from a data URL.
+
 ### Resume PDF Generation
 
 ```typescript
@@ -660,7 +682,27 @@ Only use these — others are silently ignored:
 
 ## pdf-parse
 
+### Next.js Worker Resolution (2026-09-15)
+
+Include `pdf-parse` and `pdfjs-dist` in `serverExternalPackages`. Bundling PDF.js into Next.js chunks breaks its relative worker import. The production route is covered by `tests/resume-runtime.mjs`, which parses an actual PDF and stubs only external services.
+
 **Check first:** Check AGENTS.md for an installed pdf-parse skill.
+
+### Verified Feature 07 Pattern (2026-09-12)
+
+The installed `pdf-parse` package is v2 and exposes a `PDFParse` class, not the older default function API. Use it only in server route/helper code, destroy the parser in `finally`, and reject short/textless PDFs with the approved message.
+
+```typescript
+import { PDFParse } from "pdf-parse";
+
+const parser = new PDFParse({ data: new Uint8Array(await file.arrayBuffer()) });
+try {
+  const result = await parser.getText();
+  const text = result.text.replace(/\s+/g, " ").trim();
+} finally {
+  await parser.destroy();
+}
+```
 
 ### Extract Text from Uploaded Resume
 

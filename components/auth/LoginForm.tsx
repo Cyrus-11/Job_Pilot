@@ -32,9 +32,14 @@ function ProviderButton({ label, provider, mark, onSelect }: ProviderButtonProps
 type LoginFormProps = {
   isConfigured: boolean;
   initialError?: string;
+  nextPath?: string;
 };
 
-export function LoginForm({ isConfigured, initialError }: LoginFormProps) {
+export function LoginForm({
+  isConfigured,
+  initialError,
+  nextPath = "/dashboard",
+}: LoginFormProps) {
   const initialState: AuthActionState = {
     success: !initialError,
     error: initialError,
@@ -54,6 +59,7 @@ export function LoginForm({ isConfigured, initialError }: LoginFormProps) {
   return (
     <form action={action} className="space-y-3" aria-busy={pending}>
       <input name="posthogDistinctId" type="hidden" />
+      <input name="next" type="hidden" value={nextPath} />
       <fieldset className="space-y-3" disabled={pending || !isConfigured}>
         <ProviderButton label="Continue with Google" provider="google" mark="G" onSelect={attachPostHogDistinctId} />
         <ProviderButton label="Continue with GitHub" provider="github" mark="GH" onSelect={attachPostHogDistinctId} />

@@ -1,5 +1,9 @@
 # UI Registry
 
+## Resume Extraction Repair (2026-09-15)
+
+The existing extraction button, loading state, draft review behavior, and error presentation remain the Feature 07 UI contract. Worker loading and server diagnostics were repaired without changing visual patterns.
+
 Living document. Updated after every component is built. Read this before building any new component — match existing patterns exactly before inventing new ones.
 
 ---
@@ -38,15 +42,15 @@ After building any component — update this file with the component name, file 
 
 ### Workspace route placeholders - 2026-09-11
 
-- **Files:** `app/(workspace)/layout.tsx`, `components/layout/PendingPage.tsx`, and the dashboard, find-jobs, and profile pages in that route group.
+- **Files:** `app/(workspace)/layout.tsx`, `components/layout/PendingPage.tsx`, and the dashboard and find-jobs pages in that route group.
 - **Layout:** Existing background and Navbar; main content uses `mx-auto w-full max-w-[1440px] px-4 py-8 sm:px-8` with `id="main-content"` for the skip link.
 - **Page title:** `text-2xl font-semibold leading-8 text-text-primary`.
 - **Status section:** `space-y-3 border-t border-border py-8`; no card, shadow, or decorative radius.
 - **Status heading:** `text-base font-semibold leading-6 text-text-primary`; supporting copy uses `max-w-xl text-sm leading-5 text-text-secondary`.
 - **Return link:** `landing-nav-link inline-block text-sm`, preserving existing hover and keyboard focus styles.
-- **Navbar:** Optional `isAuthenticated` prop displays a form using the existing sign-out action and `landing-button-secondary px-5 py-2.5 text-sm`; the default homepage CTA is unchanged.
+- **Navbar:** Authenticated workspace pages use the `Authenticated Workspace Navbar` pattern below.
 - **Footer:** Only published navigation destinations are linked. Privacy and terms links remain omitted until their content exists.
-- These are temporary unavailable states, not the completed dashboard, search, or profile UI.
+- These are temporary unavailable states, not the completed dashboard or search UI. Profile is no longer a placeholder.
 
 ### Homepage foundation — 2026-09-09
 
@@ -71,12 +75,14 @@ Shared definitions: `app/globals.css`.
 ### Navbar
 
 File: `components/layout/Navbar.tsx` — updated 2026-09-09.
+Last behavior update: 2026-09-11.
 
 - Surface and border: `border-b border-border bg-surface`.
 - Navigation: `gap-8 text-sm text-text-dark`; links use `landing-nav-link`.
 - CTA: `landing-button-primary px-5 py-2.5 text-sm`.
 - Logo: supplied `/logo.png`, `landing-focus w-fit rounded-sm` link.
 - Normal-flow navigation moves to a second row on small screens. Includes a keyboard-visible skip link.
+- Public navbar primary CTA reads Start for free when logged out and Dashboard when the homepage has a server-verified user session; visual styling does not change.
 
 ### Footer
 
@@ -89,10 +95,11 @@ File: `components/layout/Footer.tsx` — updated 2026-09-09.
 ### CtaLinks
 
 File: `components/homepage/CtaLinks.tsx` — updated 2026-09-09.
+Last behavior update: 2026-09-11.
 
 - Shared CTA pair for Hero and ClosingCta, `gap-4`.
 - Both buttons: `px-6 py-3 text-base`; primary includes `gap-1.5` and a decorative triangle.
-- Get Started links to `/login`; Find Your First Match links to `/find-jobs`.
+- Logged-out primary CTA reads Get Started and links to `/login`; logged-in primary CTA reads Go to Dashboard and links to `/dashboard`. Find Your First Match links to `/find-jobs`.
 
 ### Hero
 
@@ -180,3 +187,59 @@ Auth recovery (2026-09-09): The existing configuration warning and disabled prov
 Auth review fixes (2026-09-10): Callback failures initialize the existing form error state with a fixed, readable message. Callback and action errors share the existing error-message classes and `role="alert"`. Unknown URL error values are never displayed. No visual tokens changed.
 
 Interaction notes: The form exposes `aria-busy` while submitting. Its fieldset disables both providers during submission or when configuration is invalid, using the recorded disabled button treatment. Callback errors initialize the same action state used for sign-in errors, so a subsequent failed attempt replaces the initial message in the existing alert.
+
+### Authenticated Workspace Navbar
+
+File: `components/layout/Navbar.tsx`, `components/layout/WorkspaceNav.tsx` - added 2026-09-11.
+Last imprinted: 2026-09-11.
+
+| Property | Classes / tokens |
+| --- | --- |
+| Header surface | `border-b border-border bg-surface` |
+| Header shell | `mx-auto flex min-h-16 w-full max-w-[1440px] flex-col items-center justify-between gap-1 px-5 sm:flex-row sm:px-8` |
+| Logo link | `landing-focus w-fit rounded-sm py-4 sm:py-0` |
+| Nav group | `flex min-h-16 flex-wrap items-center justify-center gap-6 text-base font-semibold sm:justify-end sm:gap-10` |
+| Nav item | `inline-flex min-h-16 items-center gap-2 border-b-2 px-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent` |
+| Active item | `border-accent text-accent` |
+| Inactive item | `border-transparent text-text-dark hover:text-accent` |
+
+Pattern notes: Authenticated app pages use icon+text navigation with active state expressed only through accent text and a bottom border. The public landing navbar remains separate and keeps its Start for free CTA.
+
+### Profile Page Surface
+
+Resume extraction update (2026-09-12): Uploaded resumes now expose Extract from Resume next to View resume and Download resume. The action uses Lucide Sparkles at rest and the existing spinning LoaderCircle while processing. It uses the same wrapping link/action row, accent text, `min-h-10` target, disabled opacity, and focus outline as the resume view/download controls. Successful extraction fills the current profile form as an unsaved draft and shows the existing success status text pattern.
+
+Resume generation update (2026-09-15): Generate Resume from Profile is now enabled in `components/profile/ResumeCard.tsx`. The button keeps the existing primary action treatment: `inline-flex min-h-12 items-center justify-center gap-3 rounded-md bg-accent px-6 py-3 text-base font-bold leading-6 text-accent-foreground shadow-sm hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent disabled:opacity-60`. It uses Lucide FileText at rest and LoaderCircle with `animate-spin` while generating. Generation errors use the existing `mt-4 text-sm text-error` alert pattern; success uses the existing `mt-2 text-sm text-success` status pattern. If the profile form has unsaved changes, the card shows an inline error asking the user to save first instead of generating from stale persisted data.
+
+Resume review update (2026-09-12): Uploaded resumes expose View resume (Lucide Eye, new tab) and Download resume (Lucide Download) in a wrapping `flex flex-wrap items-center gap-x-6 gap-y-2` row. Both use the existing accent text, `min-h-10` target, and focus outline. Viewing uses the same private endpoint with inline disposition; no public storage URL is exposed.
+
+File: `components/profile/ProfilePageContent.tsx` - added 2026-09-11.
+
+| Property | Classes / tokens |
+| --- | --- |
+| Page wrapper | `mx-auto w-full max-w-[936px] space-y-8` |
+| Card surface | `rounded-xl border border-border bg-surface p-6 shadow-sm sm:p-8` |
+| Alert card accent | `border-error/20`, tags use `bg-error/5 text-error` |
+| Section heading | `text-2xl font-bold leading-8 text-text-primary` for card titles; `text-xl font-bold leading-7 text-text-primary` for form sections |
+| Supporting text | `text-base font-medium leading-6 text-text-secondary`; alert body uses `text-text-dark` |
+| Section divider | `border-t border-border pt-12` |
+| Input | `min-h-12 w-full rounded-md border border-border bg-surface px-4 py-3 text-base font-medium leading-6 text-text-primary shadow-sm placeholder:text-text-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent` |
+| Disabled input | `disabled:bg-surface-secondary disabled:text-text-muted` |
+| Secondary button | `rounded-md border border-border bg-surface px-6 text-base font-bold leading-6 text-text-dark shadow-sm hover:bg-surface-secondary` |
+| Primary button | `rounded-md bg-accent px-6 text-base font-bold leading-6 text-accent-foreground shadow-sm hover:opacity-90` |
+| Tag | `inline-flex min-h-9 items-center rounded-md border border-border bg-surface-secondary px-3 text-base font-semibold leading-6 text-text-primary` |
+
+Pattern notes (updated 2026-09-12, Feature 06): The profile is now backed by saved data. `ProfileField.tsx` uses native selects, month inputs, and textareas with the same token-based input treatment. `ProfileTags.tsx` uses Lucide plus/remove buttons with labels, titles, and visible focus. Work roles use a left border and spacing inside the form rather than nested cards. Empty work history and education remain valid.
+
+Interaction patterns: `ProfileCompletion.tsx` displays persisted completion with an accessible progressbar; incomplete state uses error tokens and complete state uses success tokens. `ResumeCard.tsx` uses the existing dashed upload surface, accent border on drag-over, a spinner while uploading/generating, status/alert messages, and private view/download links after a resume exists. Form submission disables the fieldset, preserves edits after failure, and displays field-specific errors and a saved/unsaved status. Uploading and generation do not reset draft fields.
+
+Lifecycle note (2026-09-15): Profile client components that await server work before updating state use a `mounted` ref set inside `useEffect` and check it after awaited work before calling state setters. Browser checks capture both `pageerror` and `console.error` so React lifecycle warnings fail validation.
+
+| Functional state | Classes / tokens |
+| --- | --- |
+| Complete profile | `border-success/20 text-success` |
+| Field error | `mt-2 text-sm text-error` with `aria-invalid` and `aria-describedby` |
+| Save error | `rounded-md border border-error px-3 py-2 text-sm text-error` with `role="alert"` |
+| Icon control | `size-10` or `size-12`, `rounded-md`, Lucide icon, accessible label and title |
+| Work role divider | `border-l-2 border-border pl-4 sm:pl-6` |
+| Pending controls | `disabled:opacity-60`, `aria-busy`, `animate-spin` on the loading icon |

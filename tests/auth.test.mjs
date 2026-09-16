@@ -26,8 +26,10 @@ function loadModule(path, mocks = {}) {
   return exports;
 }
 
+const authLib = loadModule("lib/auth.ts");
 const { proxy, config } = loadModule("proxy.ts", {
   "@insforge/sdk/ssr/middleware": middleware,
+  "@/lib/auth": authLib,
 });
 const { LoginForm } = loadModule("components/auth/LoginForm.tsx", {
   "@/actions/auth": { signInWithOAuth: async () => ({ success: false, error: "Retry failed" }) },
@@ -37,6 +39,7 @@ const { LoginForm } = loadModule("components/auth/LoginForm.tsx", {
 function loadLogin(client) {
   return loadModule("app/(auth)/login/page.tsx", {
     "@/components/auth/LoginForm": { LoginForm },
+    "@/lib/auth": authLib,
     "@/lib/insforge-config": { hasInsforgePublicConfig: () => true },
     "@/lib/insforge-server": { createInsforgeServer: async () => client },
   }).default;
@@ -146,6 +149,54 @@ test("revoked refresh cookies are deleted on the redirect and not retried", asyn
   assert.equal(calls, 1);
 });
 
+test("protected profile navigation preserves the destination through login", async (t) => {
+  configureBackend(t, async () => {
+    return Response.json(
+      { error: "MISSING_REFRESH_TOKEN", message: "Missing", statusCode: 401 },
+      { status: 401 },
+    );
+  });
+
+  const response = await proxy(new NextRequest("http://localhost/profile?section=resume"));
+  const location = new URL(response.headers.get("location"));
+
+  assert.equal(location.pathname, "/login");
+  assert.equal(location.searchParams.get("next"), "/profile?section=resume");
+});
+
+test("login and callback honor safe protected next destinations", async () => {
+  const user = { id: "test-user", email: "user@example.test", profile: { name: "Test User" } };
+  const LoginPage = loadLogin({
+    auth: { getCurrentUser: async () => ({ data: { user: null }, error: null }) },
+  });
+  const page = await LoginPage({
+    searchParams: Promise.resolve({ next: "/profile?section=resume" }),
+  });
+  const form = findForm(page);
+
+  assert.equal(form.props.nextPath, "/profile?section=resume");
+
+  const { GET } = loadModule("app/(auth)/callback/route.ts", {
+    "@insforge/sdk/ssr": {
+      createAuthActions: () => ({
+        exchangeOAuthCode: async () => ({ data: { user }, error: null }),
+      }),
+    },
+    "@/lib/auth": authLib,
+    "@/lib/posthog-server": {
+      capturePostHogServerException: async () => {},
+      identifyPostHogServerUser: async () => {},
+    },
+  });
+  const response = await GET(new NextRequest(
+    "http://localhost/callback?insforge_code=code&next=/profile%3Fsection%3Dresume",
+    { headers: { cookie: "jobpilot_oauth_code_verifier=verifier" } },
+  ));
+
+  assert.equal(new URL(response.headers.get("location")).pathname, "/profile");
+  assert.equal(new URL(response.headers.get("location")).search, "?section=resume");
+});
+
 test("anonymous login renders normally without a refresh request", async (t) => {
   configureBackend(t, async () => assert.fail("Anonymous login must not refresh"));
   const response = await proxy(new NextRequest("http://localhost/login"));
@@ -190,7 +241,9 @@ test("homepage navigation and the sign-in destination resolve to implemented pag
     ["components/layout/Footer.tsx", "Footer"],
     ["components/homepage/CtaLinks.tsx", "CtaLinks"],
   ]) {
-    const Component = loadModule(path, { "@/actions/auth": { signOut: async () => {} } })[name];
+    const Component = loadModule(path, {
+      "@/components/layout/WorkspaceNav": { WorkspaceNav: () => null },
+    })[name];
     const html = renderToStaticMarkup(createElement(Component));
     for (const [, href] of html.matchAll(/href="(\/[^"?#]*)"/g)) {
       assert.ok(routes.has(href), `${name} links to missing page ${href}`);
@@ -218,9 +271,9 @@ test("workspace only renders for a verified user", async () => {
   }
 });
 
-test("all workspace destinations render their unavailable state", () => {
+test("workspace pending destinations render their unavailable state and profile renders its UI", async () => {
   const { PendingPage } = loadModule("components/layout/PendingPage.tsx");
-  for (const [route, title] of [["dashboard", "Dashboard"], ["find-jobs", "Find Jobs"], ["profile", "Profile"]]) {
+  for (const [route, title] of [["dashboard", "Dashboard"], ["find-jobs", "Find Jobs"]]) {
     const Page = loadModule(`app/(workspace)/${route}/page.tsx`, {
       "@/components/layout/PendingPage": { PendingPage },
     }).default;
@@ -229,4 +282,18 @@ test("all workspace destinations render their unavailable state", () => {
     assert.match(html, /Coming soon/);
     assert.match(html, /href="\/"/);
   }
+
+  const ProfilePage = loadModule("app/(workspace)/profile/page.tsx", {
+    "@/lib/profile": loadModule("lib/profile.ts"),
+    "@/lib/insforge-server": { createInsforgeServer: async () => ({
+      auth: { getCurrentUser: async () => ({ data: { user: { id: "test-user", email: "user@example.test" } }, error: null }) },
+      database: { from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) }) },
+    }) },
+    "@/components/profile/ProfilePageContent": {
+      ProfilePageContent: () => createElement("main", null, "Profile Information"),
+    },
+  }).default;
+  const profileHtml = renderToStaticMarkup(await ProfilePage());
+
+  assert.match(profileHtml, /Profile Information/);
 });

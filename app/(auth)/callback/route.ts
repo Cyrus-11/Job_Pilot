@@ -4,6 +4,7 @@ import { createAuthActions } from "@insforge/sdk/ssr";
 import {
   OAUTH_CODE_VERIFIER_COOKIE,
   POSTHOG_DISTINCT_ID_COOKIE,
+  parseSafeAuthRedirect,
 } from "@/lib/auth";
 import {
   capturePostHogServerException,
@@ -25,7 +26,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const anonymousDistinctId = request.cookies.get(
     POSTHOG_DISTINCT_ID_COOKIE,
   )?.value;
-  const destination = new URL("/dashboard", request.url);
+  const destination = new URL(
+    parseSafeAuthRedirect(request.nextUrl.searchParams.get("next")),
+    request.url,
+  );
   const loginUrl = new URL("/login", request.url);
   const response = NextResponse.redirect(destination);
 

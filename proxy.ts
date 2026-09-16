@@ -1,14 +1,7 @@
 import { updateSession } from "@insforge/sdk/ssr/middleware";
 import { type NextRequest, NextResponse } from "next/server";
 
-const PROTECTED_PATHS = ["/dashboard", "/profile", "/find-jobs"];
-
-function isProtectedPath(pathname: string): boolean {
-  return PROTECTED_PATHS.some(
-    (protectedPath: string) =>
-      pathname === protectedPath || pathname.startsWith(`${protectedPath}/`),
-  );
-}
+import { isProtectedPath } from "@/lib/auth";
 
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const response = NextResponse.next();
@@ -22,7 +15,10 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 
   if (isProtectedPath(request.nextUrl.pathname) && !accessToken) {
     const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("next", request.nextUrl.pathname);
+    loginUrl.searchParams.set(
+      "next",
+      `${request.nextUrl.pathname}${request.nextUrl.search}`,
+    );
 
     finalResponse = NextResponse.redirect(loginUrl);
   }

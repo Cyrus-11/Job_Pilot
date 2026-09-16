@@ -4,11 +4,12 @@ import { redirect } from "next/navigation";
 import type { ReactElement } from "react";
 
 import { LoginForm } from "@/components/auth/LoginForm";
+import { parseSafeAuthRedirect } from "@/lib/auth";
 import { hasInsforgePublicConfig } from "@/lib/insforge-config";
 import { createInsforgeServer } from "@/lib/insforge-server";
 
 type LoginPageProps = {
-  searchParams: Promise<{ error?: string | string[] }>;
+  searchParams: Promise<{ error?: string | string[]; next?: string | string[] }>;
 };
 
 export default async function LoginPage({
@@ -23,11 +24,13 @@ export default async function LoginPage({
     } = await insforge.auth.getCurrentUser();
 
     if (user) {
-      redirect("/dashboard");
+      const { next } = await searchParams;
+      redirect(parseSafeAuthRedirect(typeof next === "string" ? next : null));
     }
   }
 
-  const { error } = await searchParams;
+  const { error, next } = await searchParams;
+  const nextPath = parseSafeAuthRedirect(typeof next === "string" ? next : null);
   const initialError =
     error === "oauth_callback"
       ? "We couldn't complete your sign-in. Please try again."
@@ -50,7 +53,7 @@ export default async function LoginPage({
             </p>
           </div>
 
-          <LoginForm isConfigured={isConfigured} initialError={initialError} />
+          <LoginForm isConfigured={isConfigured} initialError={initialError} nextPath={nextPath} />
         </section>
       </div>
     </main>
